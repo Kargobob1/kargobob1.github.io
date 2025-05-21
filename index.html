@@ -1,386 +1,763 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Wifi, WifiOff, CheckCircle, XCircle, MapPin, Clock, Upload } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repark Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-const RepartManager = () => {
-  const [currentStep, setCurrentStep] = useState('scan'); // scan, login, checking, offline, config, confirm, test, success
-  const [routerOnline, setRouterOnline] = useState(false);
-  const [technicianName, setTechnicianName] = useState('');
-  const [formData, setFormData] = useState({
-    street: '',
-    houseNumber: '',
-    garage: '',
-    entryType: 'tor'
-  });
-  const [photo, setPhoto] = useState(null);
-  const [testPassed, setTestPassed] = useState(false);
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
 
-  // Simuliere Router Online-Status nach 3 Sekunden
-  useEffect(() => {
-    if (currentStep === 'checking') {
-      const timer = setTimeout(() => {
-        const isOnline = Math.random() > 0.3; // 70% Chance online
-        setRouterOnline(isOnline);
-        setCurrentStep(isOnline ? 'config' : 'offline');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentStep]);
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
 
-  const availableGarages = [
-    'Garage A - Tiefgarage',
-    'Garage B - Außenstellplatz',
-    'Garage C - Carport',
-    'Garage D - Einzelgarage'
-  ];
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 1.5rem;
+        }
 
-  const handleQRScan = () => {
-    setCurrentStep('login');
-  };
+        .header-content {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
 
-  const handleLogin = () => {
-    if (technicianName.trim()) {
-      setCurrentStep('checking');
-    }
-  };
+        .logo {
+            width: 2rem;
+            height: 2rem;
+            background: white;
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            margin-right: 0.75rem;
+        }
 
-  const handleFormSubmit = () => {
-    if (formData.street && formData.houseNumber && formData.garage) {
-      setCurrentStep('confirm');
-    }
-  };
+        .logo svg {
+            width: 100%;
+            height: 100%;
+        }
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => setPhoto(e.target.result);
-      reader.readAsDataURL(file);
-    }
-  };
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
 
-  const startTest = () => {
-    setCurrentStep('test');
-  };
+        .header p {
+            color: #bfdbfe;
+            font-size: 0.875rem;
+        }
 
-  const handleTestResult = (passed) => {
-    setTestPassed(passed);
-    if (passed) {
-      setCurrentStep('success');
-    }
-  };
+        .content {
+            padding: 2rem;
+        }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Header mit Logo */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-          <div className="flex items-center mb-2">
-            {/* Repark Logo SVG */}
-            <div className="w-8 h-8 mr-3 bg-white rounded-lg p-1">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
-                <rect x="10" y="20" width="80" height="60" rx="8" fill="#2563eb" />
-                <circle cx="30" cy="40" r="6" fill="white" />
-                <circle cx="70" cy="40" r="6" fill="white" />
-                <rect x="25" y="55" width="50" height="4" rx="2" fill="white" />
-              </svg>
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .qr-placeholder {
+            width: 10rem;
+            height: 10rem;
+            margin: 0 auto 1.5rem;
+            border: 4px dashed #bfdbfe;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #dbeafe;
+        }
+
+        .spinner-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto;
+            border: 4px solid #2563eb;
+            border-top: 4px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-icon {
+            width: 5rem;
+            height: 5rem;
+            margin: 0 auto 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-icon.online {
+            background: #dcfce7;
+        }
+
+        .status-icon.offline {
+            background: #fef2f2;
+        }
+
+        .status-icon.success {
+            background: #dcfce7;
+        }
+
+        .status-badge {
+            background: #dcfce7;
+            border: 2px solid #bbf7d0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-badge-icon {
+            width: 2rem;
+            height: 2rem;
+            background: #16a34a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .file-input-container {
+            position: relative;
+        }
+
+        .file-preview {
+            margin-top: 0.75rem;
+            width: 100%;
+            height: 10rem;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+        }
+
+        .button:active {
+            transform: scale(0.95);
+        }
+
+        .button.primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.4);
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
+        }
+
+        .button.full-width {
+            width: 100%;
+        }
+
+        .button:disabled {
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button:disabled:hover {
+            transform: none;
+        }
+
+        .open-button {
+            width: 8rem;
+            height: 8rem;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.125rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 auto 2rem;
+            display: block;
+            box-shadow: 0 20px 40px -10px rgba(34, 197, 94, 0.4);
+            transition: all 0.3s;
+        }
+
+        .open-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 25px 50px -12px rgba(34, 197, 94, 0.5);
+        }
+
+        .open-button:active {
+            transform: scale(0.95);
+        }
+
+        .alert {
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid;
+        }
+
+        .alert.warning {
+            background: #fefce8;
+            border-color: #facc15;
+            color: #a16207;
+        }
+
+        .alert.error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #dc2626;
+        }
+
+        .alert.info {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+
+        .details-box {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .details-box h3 {
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.75rem;
+        }
+
+        .details-box p {
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .details-box svg {
+            margin-right: 0.5rem;
+        }
+
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .font-bold { font-weight: bold; }
+        .font-semibold { font-weight: 600; }
+        
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-800 { color: #1f2937; }
+        .text-red-600 { color: #dc2626; }
+        .text-green-600 { color: #16a34a; }
+        .text-green-700 { color: #15803d; }
+        .text-blue-700 { color: #1d4ed8; }
+        .text-yellow-800 { color: #92400e; }
+
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-5 > * + * { margin-top: 1.25rem; }
+
+        .leading-relaxed { line-height: 1.625; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100">
+                        <rect x="10" y="20" width="80" height="60" rx="8" fill="#2563eb" />
+                        <circle cx="30" cy="40" r="6" fill="white" />
+                        <circle cx="70" cy="40" r="6" fill="white" />
+                        <rect x="25" y="55" width="50" height="4" rx="2" fill="white" />
+                    </svg>
+                </div>
+                <div>
+                    <h1>Repark Manager</h1>
+                    <p>Router Installation</p>
+                </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Repark Manager</h1>
-              <p className="text-blue-100 text-sm">Router Installation</p>
-            </div>
-          </div>
         </div>
 
-        {/* QR Code Scanner */}
-        {currentStep === 'scan' && (
-          <div className="p-8 text-center">
-            <div className="w-40 h-40 mx-auto mb-6 border-4 border-dashed border-blue-200 rounded-2xl flex items-center justify-center bg-blue-50">
-              <Camera size={60} className="text-blue-400" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-3">QR-Code scannen</h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">Scannen Sie den QR-Code auf dem Teltonika Router</p>
-            <button 
-              onClick={handleQRScan}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              📱 QR-Code simulieren
-            </button>
-          </div>
-        )}
-
-        {/* Login */}
-        {currentStep === 'login' && (
-          <div className="p-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Techniker Anmeldung</h2>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Techniker Name
-              </label>
-              <input
-                type="text"
-                value={technicianName}
-                onChange={(e) => setTechnicianName(e.target.value)}
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                placeholder="Max Mustermann"
-              />
-            </div>
-            <button 
-              onClick={handleLogin}
-              disabled={!technicianName.trim()}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none transform hover:scale-105 transition-all duration-200"
-            >
-              🔑 Anmelden
-            </button>
-          </div>
-        )}
-
-        {/* Checking Router Status */}
-        {currentStep === 'checking' && (
-          <div className="p-8 text-center">
-            <div className="relative mb-6">
-              <div className="animate-spin w-16 h-16 mx-auto border-4 border-blue-600 border-t-transparent rounded-full"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Wifi size={24} className="text-blue-600" />
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-3">Router-Status prüfen</h2>
-            <p className="text-gray-600">Verbindung wird überprüft...</p>
-            <div className="mt-4 bg-blue-50 rounded-lg p-3">
-              <p className="text-blue-700 text-sm">⏱️ Dies kann bis zu 30 Sekunden dauern</p>
-            </div>
-          </div>
-        )}
-
-        {/* Router Offline */}
-        {currentStep === 'offline' && (
-          <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
-              <WifiOff size={40} className="text-red-500" />
-            </div>
-            <h2 className="text-xl font-bold text-red-600 mb-3">Router offline</h2>
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-              <p className="text-red-700 leading-relaxed">
-                ⚠️ Der Router muss erst online gehen.<br/>
-                <strong>Wartezeit: ca. 10 Minuten</strong> nach dem Anschließen.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentStep('checking')}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              🔄 Erneut prüfen
-            </button>
-          </div>
-        )}
-
-        {/* Configuration Form */}
-        {currentStep === 'config' && (
-          <div className="p-8">
-            <div className="flex items-center mb-6 bg-green-50 rounded-xl p-3">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                <Wifi size={16} className="text-white" />
-              </div>
-              <span className="text-green-700 font-semibold">✅ Router online</span>
-            </div>
-            
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Installation konfigurieren</h2>
-            
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Straße
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.street}
-                    onChange={(e) => setFormData({...formData, street: e.target.value})}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="Musterstraße"
-                  />
+        <!-- QR Scanner Step -->
+        <div id="scan-step" class="step active">
+            <div class="content text-center">
+                <div class="qr-placeholder">
+                    <i data-lucide="camera" size="60" color="#60a5fa"></i>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Hausnummer
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.houseNumber}
-                    onChange={(e) => setFormData({...formData, houseNumber: e.target.value})}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="15"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Art des Eingangs
-                </label>
-                <select
-                  value={formData.entryType}
-                  onChange={(e) => setFormData({...formData, entryType: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  <option value="tor">🚗 Tor</option>
-                  <option value="schranke">🚧 Schranke</option>
-                  <option value="tuer">🚪 Türe</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Garage auswählen
-                </label>
-                <select
-                  value={formData.garage}
-                  onChange={(e) => setFormData({...formData, garage: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  <option value="">🏠 Garage wählen...</option>
-                  {availableGarages.map((garage, index) => (
-                    <option key={index} value={garage}>🅿️ {garage}</option>
-                  ))}
-                  <option value="not_found">❌ Garage nicht gefunden</option>
-                </select>
-              </div>
-
-              {formData.garage === 'not_found' && (
-                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
-                  <p className="text-yellow-800 font-medium">
-                    ⚠️ Garage noch nicht angelegt.<br/>
-                    Bitte wenden Sie sich an <strong>Repark</strong> oder die <strong>Hausverwaltung</strong>.
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  📸 Foto der Installation
-                </label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  />
-                  <Upload size={20} className="absolute right-3 top-3 text-gray-400" />
-                </div>
-                {photo && (
-                  <div className="mt-3">
-                    <img src={photo} alt="Installation" className="w-full h-40 object-cover rounded-xl shadow-lg" />
-                  </div>
-                )}
-              </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-3">QR-Code scannen</h2>
+                <p class="text-gray-600 mb-6 leading-relaxed">Scannen Sie den QR-Code auf dem Teltonika Router</p>
+                <button id="scan-button" class="button primary">
+                    📱 QR-Code simulieren
+                </button>
             </div>
+        </div>
 
-            <button 
-              onClick={handleFormSubmit}
-              disabled={!formData.street || !formData.houseNumber || !formData.garage || formData.garage === 'not_found'}
-              className="w-full mt-8 bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none transform hover:scale-105 transition-all duration-200"
-            >
-              ✅ Konfiguration absenden
-            </button>
-          </div>
-        )}
-
-        {/* Confirmation */}
-        {currentStep === 'confirm' && (
-          <div className="p-8">
-            <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle size={40} className="text-green-500" />
+        <!-- Login Step -->
+        <div id="login-step" class="step">
+            <div class="content">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">Techniker Anmeldung</h2>
+                <div class="form-group">
+                    <label class="form-label">Techniker Name</label>
+                    <input type="text" id="technician-name" class="form-input" placeholder="Max Mustermann">
+                </div>
+                <button id="login-button" class="button primary full-width" disabled>
+                    🔑 Anmelden
+                </button>
             </div>
-            <h2 className="text-xl font-bold text-center text-gray-800 mb-6">Konfiguration gespeichert</h2>
-            
-            <div className="bg-gray-50 rounded-xl p-5 mb-6 border-2 border-gray-100">
-              <h3 className="font-bold text-gray-800 mb-3">📋 Installation Details:</h3>
-              <div className="space-y-2">
-                <p className="text-gray-700 flex items-center">
-                  <MapPin size={16} className="mr-2 text-blue-500" />
-                  <strong>{formData.street} {formData.houseNumber}</strong>
+        </div>
+
+        <!-- Checking Step -->
+        <div id="checking-step" class="step">
+            <div class="content text-center">
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                    <div class="spinner-icon">
+                        <i data-lucide="wifi" size="24" color="#2563eb"></i>
+                    </div>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-3">Router-Status prüfen</h2>
+                <p class="text-gray-600">Verbindung wird überprüft...</p>
+                <div class="alert info mb-0">
+                    <p class="text-blue-700 font-semibold">⏱️ Dies kann bis zu 30 Sekunden dauern</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Step -->
+        <div id="offline-step" class="step">
+            <div class="content text-center">
+                <div class="status-icon offline">
+                    <i data-lucide="wifi-off" size="40" color="#ef4444"></i>
+                </div>
+                <h2 class="text-xl font-bold text-red-600 mb-3">Router offline</h2>
+                <div class="alert error">
+                    <p class="leading-relaxed">
+                        ⚠️ Der Router muss erst online gehen.<br/>
+                        <strong>Wartezeit: ca. 10 Minuten</strong> nach dem Anschließen.
+                    </p>
+                </div>
+                <button id="retry-button" class="button primary">
+                    🔄 Erneut prüfen
+                </button>
+            </div>
+        </div>
+
+        <!-- Config Step -->
+        <div id="config-step" class="step">
+            <div class="content">
+                <div class="status-badge">
+                    <div class="status-badge-icon">
+                        <i data-lucide="wifi" size="16" color="white"></i>
+                    </div>
+                    <span class="text-green-700 font-semibold">✅ Router online</span>
+                </div>
+                
+                <h2 class="text-xl font-bold text-gray-800 mb-6">Installation konfigurieren</h2>
+                
+                <div class="space-y-5">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Straße</label>
+                            <input type="text" id="street" class="form-input" placeholder="Musterstraße">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hausnummer</label>
+                            <input type="text" id="house-number" class="form-input" placeholder="15">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Art des Eingangs</label>
+                        <select id="entry-type" class="form-select">
+                            <option value="tor">🚗 Tor</option>
+                            <option value="schranke">🚧 Schranke</option>
+                            <option value="tuer">🚪 Türe</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Garage auswählen</label>
+                        <select id="garage-select" class="form-select">
+                            <option value="">🏠 Garage wählen...</option>
+                            <option value="garage_a">🅿️ Garage A - Tiefgarage</option>
+                            <option value="garage_b">🅿️ Garage B - Außenstellplatz</option>
+                            <option value="garage_c">🅿️ Garage C - Carport</option>
+                            <option value="garage_d">🅿️ Garage D - Einzelgarage</option>
+                            <option value="not_found">❌ Garage nicht gefunden</option>
+                        </select>
+                    </div>
+
+                    <div id="garage-warning" class="alert warning" style="display: none;">
+                        <p class="text-yellow-800 font-medium">
+                            ⚠️ Garage noch nicht angelegt.<br/>
+                            Bitte wenden Sie sich an <strong>Repark</strong> oder die <strong>Hausverwaltung</strong>.
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">📸 Foto der Installation</label>
+                        <div class="file-input-container">
+                            <input type="file" id="photo-input" class="form-input" accept="image/*">
+                            <img id="photo-preview" class="file-preview" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="submit-config" class="button success full-width" disabled>
+                    ✅ Konfiguration absenden
+                </button>
+            </div>
+        </div>
+
+        <!-- Confirm Step -->
+        <div id="confirm-step" class="step">
+            <div class="content">
+                <div class="status-icon success">
+                    <i data-lucide="check-circle" size="40" color="#16a34a"></i>
+                </div>
+                <h2 class="text-xl font-bold text-center text-gray-800 mb-6">Konfiguration gespeichert</h2>
+                
+                <div class="details-box">
+                    <h3>📋 Installation Details:</h3>
+                    <div id="installation-details"></div>
+                </div>
+                
+                <button id="start-test" class="button primary full-width">
+                    🧪 Testlauf starten
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Step -->
+        <div id="test-step" class="step">
+            <div class="content text-center">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">🧪 Funktionstest</h2>
+                <p class="text-gray-600 mb-8 leading-relaxed">Testen Sie die Öffnungsfunktion durch Drücken der Schaltfläche</p>
+                
+                <button class="open-button">
+                    🔓<br/>ÖFFNEN
+                </button>
+                
+                <div class="space-y-4">
+                    <button id="test-passed" class="button success full-width">
+                        ✅ Test bestanden
+                    </button>
+                    <button id="test-failed" class="button danger full-width">
+                        ❌ Test fehlgeschlagen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Step -->
+        <div id="success-step" class="step">
+            <div class="content text-center">
+                <div class="status-icon success">
+                    <i data-lucide="check-circle" size="50" color="#16a34a"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-green-600 mb-3">🎉 Installation erfolgreich!</h2>
+                <p class="text-gray-600 mb-8 leading-relaxed">
+                    Router wurde erfolgreich angelegt und mit der Garage verbunden.
                 </p>
-                <p className="text-gray-700">
-                  🅿️ <strong>Garage:</strong> {formData.garage}
-                </p>
-                <p className="text-gray-700">
-                  🚗 <strong>Typ:</strong> {formData.entryType.charAt(0).toUpperCase() + formData.entryType.slice(1)}
-                </p>
-              </div>
+                
+                <div class="alert info">
+                    <p class="text-green-800 font-medium">
+                        <i data-lucide="clock" size="18" style="margin-right: 0.5rem; vertical-align: middle;"></i>
+                        Abgeschlossen um <span id="completion-time"></span>
+                    </p>
+                </div>
+                
+                <button id="new-installation" class="button primary full-width">
+                    🔄 Neue Installation
+                </button>
             </div>
-            
-            <button 
-              onClick={startTest}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              🧪 Testlauf starten
-            </button>
-          </div>
-        )}
-
-        {/* Test */}
-        {currentStep === 'test' && (
-          <div className="p-8 text-center">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">🧪 Funktionstest</h2>
-            <p className="text-gray-600 mb-8 leading-relaxed">Testen Sie die Öffnungsfunktion durch Drücken der Schaltfläche</p>
-            
-            <div className="mb-8">
-              <button className="w-32 h-32 mx-auto bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 active:scale-95">
-                🔓<br/>ÖFFNEN
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <button 
-                onClick={() => handleTestResult(true)}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-              >
-                ✅ Test bestanden
-              </button>
-              <button 
-                onClick={() => handleTestResult(false)}
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-              >
-                ❌ Test fehlgeschlagen
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Success */}
-        {currentStep === 'success' && (
-          <div className="p-8 text-center">
-            <div className="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle size={50} className="text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-green-600 mb-3">🎉 Installation erfolgreich!</h2>
-            <p className="text-gray-600 mb-8 leading-relaxed">
-              Router wurde erfolgreich angelegt und mit der Garage verbunden.
-            </p>
-            
-            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5 mb-6">
-              <p className="text-green-800 font-medium flex items-center justify-center">
-                <Clock size={18} className="mr-2" />
-                Abgeschlossen um {new Date().toLocaleTimeString()}
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => {
-                setCurrentStep('scan');
-                setFormData({street: '', houseNumber: '', garage: '', entryType: 'tor'});
-                setPhoto(null);
-                setTechnicianName('');
-              }}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              🔄 Neue Installation
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
     </div>
-  );
-};
 
-export default RepartManager;
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // State management
+        let currentStep = 'scan';
+        let formData = {
+            street: '',
+            houseNumber: '',
+            garage: '',
+            entryType: 'tor',
+            technicianName: '',
+            photo: null
+        };
+
+        // DOM elements
+        const steps = {
+            scan: document.getElementById('scan-step'),
+            login: document.getElementById('login-step'),
+            checking: document.getElementById('checking-step'),
+            offline: document.getElementById('offline-step'),
+            config: document.getElementById('config-step'),
+            confirm: document.getElementById('confirm-step'),
+            test: document.getElementById('test-step'),
+            success: document.getElementById('success-step')
+        };
+
+        // Helper functions
+        function showStep(stepName) {
+            Object.values(steps).forEach(step => step.classList.remove('active'));
+            steps[stepName].classList.add('active');
+            currentStep = stepName;
+        }
+
+        function updateFormValidation() {
+            const submitButton = document.getElementById('submit-config');
+            const street = document.getElementById('street').value;
+            const houseNumber = document.getElementById('house-number').value;
+            const garage = document.getElementById('garage-select').value;
+            
+            const isValid = street && houseNumber && garage && garage !== 'not_found';
+            submitButton.disabled = !isValid;
+        }
+
+        function updateLoginValidation() {
+            const loginButton = document.getElementById('login-button');
+            const name = document.getElementById('technician-name').value;
+            loginButton.disabled = !name.trim();
+        }
+
+        // Event listeners
+        document.getElementById('scan-button').addEventListener('click', function() {
+            showStep('login');
+        });
+
+        document.getElementById('technician-name').addEventListener('input', function(e) {
+            formData.technicianName = e.target.value;
+            updateLoginValidation();
+        });
+
+        document.getElementById('login-button').addEventListener('click', function() {
+            if (formData.technicianName.trim()) {
+                showStep('checking');
+                
+                // Simulate router check after 3 seconds
+                setTimeout(function() {
+                    var isOnline = Math.random() > 0.3; // 70% chance online
+                    showStep(isOnline ? 'config' : 'offline');
+                }, 3000);
+            }
+        });
+
+        document.getElementById('retry-button').addEventListener('click', function() {
+            showStep('checking');
+            setTimeout(function() {
+                var isOnline = Math.random() > 0.3;
+                showStep(isOnline ? 'config' : 'offline');
+            }, 3000);
+        });
+
+        // Form inputs
+        document.getElementById('street').addEventListener('input', function(e) {
+            formData.street = e.target.value;
+            updateFormValidation();
+        });
+
+        document.getElementById('house-number').addEventListener('input', function(e) {
+            formData.houseNumber = e.target.value;
+            updateFormValidation();
+        });
+
+        document.getElementById('entry-type').addEventListener('change', function(e) {
+            formData.entryType = e.target.value;
+        });
+
+        document.getElementById('garage-select').addEventListener('change', function(e) {
+            formData.garage = e.target.value;
+            var warning = document.getElementById('garage-warning');
+            
+            if (e.target.value === 'not_found') {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+            
+            updateFormValidation();
+        });
+
+        document.getElementById('photo-input').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    formData.photo = e.target.result;
+                    var preview = document.getElementById('photo-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('submit-config').addEventListener('click', function() {
+            // Update installation details
+            var garageOptions = {
+                'garage_a': 'Garage A - Tiefgarage',
+                'garage_b': 'Garage B - Außenstellplatz',
+                'garage_c': 'Garage C - Carport',
+                'garage_d': 'Garage D - Einzelgarage'
+            };
+            
+            var detailsContainer = document.getElementById('installation-details');
+            detailsContainer.innerHTML = 
+                '<p><i data-lucide="map-pin" size="16" color="#3b82f6" style="margin-right: 0.5rem; vertical-align: middle;"></i><strong>' + formData.street + ' ' + formData.houseNumber + '</strong></p>' +
+                '<p>🅿️ <strong>Garage:</strong> ' + garageOptions[formData.garage] + '</p>' +
+                '<p>🚗 <strong>Typ:</strong> ' + formData.entryType.charAt(0).toUpperCase() + formData.entryType.slice(1) + '</p>';
+            
+            lucide.createIcons();
+            showStep('confirm');
+        });
+
+        document.getElementById('start-test').addEventListener('click', function() {
+            showStep('test');
+        });
+
+        document.getElementById('test-passed').addEventListener('click', function() {
+            document.getElementById('completion-time').textContent = new Date().toLocaleTimeString();
+            showStep('success');
+        });
+
+        document.getElementById('test-failed').addEventListener('click', function() {
+            alert('Test fehlgeschlagen. Bitte überprüfen Sie die Installation.');
+        });
+
+        document.getElementById('new-installation').addEventListener('click', function() {
+            // Reset form data
+            formData = {
+                street: '',
+                houseNumber: '',
+                garage: '',
+                entryType: 'tor',
+                technicianName: '',
+                photo: null
+            };
+            
+            // Reset form inputs
+            document.getElementById('technician-name').value = '';
+            document.getElementById('street').value = '';
+            document.getElementById('house-number').value = '';
+            document.getElementById('garage-select').value = '';
+            document.getElementById('entry-type').value = 'tor';
+            document.getElementById('photo-input').value = '';
+            document.getElementById('photo-preview').style.display = 'none';
+            document.getElementById('garage-warning').style.display = 'none';
+            
+            showStep('scan');
+        });
+
+        // Initialize
+        lucide.createIcons();
+    </script>
+</body>
+</html>
