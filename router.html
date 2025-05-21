@@ -1,0 +1,386 @@
+import React, { useState, useEffect } from 'react';
+import { Camera, Wifi, WifiOff, CheckCircle, XCircle, MapPin, Clock, Upload } from 'lucide-react';
+
+const RepartManager = () => {
+  const [currentStep, setCurrentStep] = useState('scan'); // scan, login, checking, offline, config, confirm, test, success
+  const [routerOnline, setRouterOnline] = useState(false);
+  const [technicianName, setTechnicianName] = useState('');
+  const [formData, setFormData] = useState({
+    street: '',
+    houseNumber: '',
+    garage: '',
+    entryType: 'tor'
+  });
+  const [photo, setPhoto] = useState(null);
+  const [testPassed, setTestPassed] = useState(false);
+
+  // Simuliere Router Online-Status nach 3 Sekunden
+  useEffect(() => {
+    if (currentStep === 'checking') {
+      const timer = setTimeout(() => {
+        const isOnline = Math.random() > 0.3; // 70% Chance online
+        setRouterOnline(isOnline);
+        setCurrentStep(isOnline ? 'config' : 'offline');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
+  const availableGarages = [
+    'Garage A - Tiefgarage',
+    'Garage B - Außenstellplatz',
+    'Garage C - Carport',
+    'Garage D - Einzelgarage'
+  ];
+
+  const handleQRScan = () => {
+    setCurrentStep('login');
+  };
+
+  const handleLogin = () => {
+    if (technicianName.trim()) {
+      setCurrentStep('checking');
+    }
+  };
+
+  const handleFormSubmit = () => {
+    if (formData.street && formData.houseNumber && formData.garage) {
+      setCurrentStep('confirm');
+    }
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPhoto(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startTest = () => {
+    setCurrentStep('test');
+  };
+
+  const handleTestResult = (passed) => {
+    setTestPassed(passed);
+    if (passed) {
+      setCurrentStep('success');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Header mit Logo */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+          <div className="flex items-center mb-2">
+            {/* Repark Logo SVG */}
+            <div className="w-8 h-8 mr-3 bg-white rounded-lg p-1">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                <rect x="10" y="20" width="80" height="60" rx="8" fill="#2563eb" />
+                <circle cx="30" cy="40" r="6" fill="white" />
+                <circle cx="70" cy="40" r="6" fill="white" />
+                <rect x="25" y="55" width="50" height="4" rx="2" fill="white" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Repark Manager</h1>
+              <p className="text-blue-100 text-sm">Router Installation</p>
+            </div>
+          </div>
+        </div>
+
+        {/* QR Code Scanner */}
+        {currentStep === 'scan' && (
+          <div className="p-8 text-center">
+            <div className="w-40 h-40 mx-auto mb-6 border-4 border-dashed border-blue-200 rounded-2xl flex items-center justify-center bg-blue-50">
+              <Camera size={60} className="text-blue-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-3">QR-Code scannen</h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">Scannen Sie den QR-Code auf dem Teltonika Router</p>
+            <button 
+              onClick={handleQRScan}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              📱 QR-Code simulieren
+            </button>
+          </div>
+        )}
+
+        {/* Login */}
+        {currentStep === 'login' && (
+          <div className="p-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-6">Techniker Anmeldung</h2>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Techniker Name
+              </label>
+              <input
+                type="text"
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
+                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Max Mustermann"
+              />
+            </div>
+            <button 
+              onClick={handleLogin}
+              disabled={!technicianName.trim()}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none transform hover:scale-105 transition-all duration-200"
+            >
+              🔑 Anmelden
+            </button>
+          </div>
+        )}
+
+        {/* Checking Router Status */}
+        {currentStep === 'checking' && (
+          <div className="p-8 text-center">
+            <div className="relative mb-6">
+              <div className="animate-spin w-16 h-16 mx-auto border-4 border-blue-600 border-t-transparent rounded-full"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Wifi size={24} className="text-blue-600" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-3">Router-Status prüfen</h2>
+            <p className="text-gray-600">Verbindung wird überprüft...</p>
+            <div className="mt-4 bg-blue-50 rounded-lg p-3">
+              <p className="text-blue-700 text-sm">⏱️ Dies kann bis zu 30 Sekunden dauern</p>
+            </div>
+          </div>
+        )}
+
+        {/* Router Offline */}
+        {currentStep === 'offline' && (
+          <div className="p-8 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+              <WifiOff size={40} className="text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-red-600 mb-3">Router offline</h2>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <p className="text-red-700 leading-relaxed">
+                ⚠️ Der Router muss erst online gehen.<br/>
+                <strong>Wartezeit: ca. 10 Minuten</strong> nach dem Anschließen.
+              </p>
+            </div>
+            <button 
+              onClick={() => setCurrentStep('checking')}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              🔄 Erneut prüfen
+            </button>
+          </div>
+        )}
+
+        {/* Configuration Form */}
+        {currentStep === 'config' && (
+          <div className="p-8">
+            <div className="flex items-center mb-6 bg-green-50 rounded-xl p-3">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                <Wifi size={16} className="text-white" />
+              </div>
+              <span className="text-green-700 font-semibold">✅ Router online</span>
+            </div>
+            
+            <h2 className="text-xl font-bold text-gray-800 mb-6">Installation konfigurieren</h2>
+            
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Straße
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.street}
+                    onChange={(e) => setFormData({...formData, street: e.target.value})}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="Musterstraße"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Hausnummer
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.houseNumber}
+                    onChange={(e) => setFormData({...formData, houseNumber: e.target.value})}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="15"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Art des Eingangs
+                </label>
+                <select
+                  value={formData.entryType}
+                  onChange={(e) => setFormData({...formData, entryType: e.target.value})}
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="tor">🚗 Tor</option>
+                  <option value="schranke">🚧 Schranke</option>
+                  <option value="tuer">🚪 Türe</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Garage auswählen
+                </label>
+                <select
+                  value={formData.garage}
+                  onChange={(e) => setFormData({...formData, garage: e.target.value})}
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="">🏠 Garage wählen...</option>
+                  {availableGarages.map((garage, index) => (
+                    <option key={index} value={garage}>🅿️ {garage}</option>
+                  ))}
+                  <option value="not_found">❌ Garage nicht gefunden</option>
+                </select>
+              </div>
+
+              {formData.garage === 'not_found' && (
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                  <p className="text-yellow-800 font-medium">
+                    ⚠️ Garage noch nicht angelegt.<br/>
+                    Bitte wenden Sie sich an <strong>Repark</strong> oder die <strong>Hausverwaltung</strong>.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  📸 Foto der Installation
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                  <Upload size={20} className="absolute right-3 top-3 text-gray-400" />
+                </div>
+                {photo && (
+                  <div className="mt-3">
+                    <img src={photo} alt="Installation" className="w-full h-40 object-cover rounded-xl shadow-lg" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={handleFormSubmit}
+              disabled={!formData.street || !formData.houseNumber || !formData.garage || formData.garage === 'not_found'}
+              className="w-full mt-8 bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none transform hover:scale-105 transition-all duration-200"
+            >
+              ✅ Konfiguration absenden
+            </button>
+          </div>
+        )}
+
+        {/* Confirmation */}
+        {currentStep === 'confirm' && (
+          <div className="p-8">
+            <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle size={40} className="text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-center text-gray-800 mb-6">Konfiguration gespeichert</h2>
+            
+            <div className="bg-gray-50 rounded-xl p-5 mb-6 border-2 border-gray-100">
+              <h3 className="font-bold text-gray-800 mb-3">📋 Installation Details:</h3>
+              <div className="space-y-2">
+                <p className="text-gray-700 flex items-center">
+                  <MapPin size={16} className="mr-2 text-blue-500" />
+                  <strong>{formData.street} {formData.houseNumber}</strong>
+                </p>
+                <p className="text-gray-700">
+                  🅿️ <strong>Garage:</strong> {formData.garage}
+                </p>
+                <p className="text-gray-700">
+                  🚗 <strong>Typ:</strong> {formData.entryType.charAt(0).toUpperCase() + formData.entryType.slice(1)}
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={startTest}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              🧪 Testlauf starten
+            </button>
+          </div>
+        )}
+
+        {/* Test */}
+        {currentStep === 'test' && (
+          <div className="p-8 text-center">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">🧪 Funktionstest</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">Testen Sie die Öffnungsfunktion durch Drücken der Schaltfläche</p>
+            
+            <div className="mb-8">
+              <button className="w-32 h-32 mx-auto bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 active:scale-95">
+                🔓<br/>ÖFFNEN
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <button 
+                onClick={() => handleTestResult(true)}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                ✅ Test bestanden
+              </button>
+              <button 
+                onClick={() => handleTestResult(false)}
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                ❌ Test fehlgeschlagen
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {currentStep === 'success' && (
+          <div className="p-8 text-center">
+            <div className="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle size={50} className="text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-green-600 mb-3">🎉 Installation erfolgreich!</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Router wurde erfolgreich angelegt und mit der Garage verbunden.
+            </p>
+            
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5 mb-6">
+              <p className="text-green-800 font-medium flex items-center justify-center">
+                <Clock size={18} className="mr-2" />
+                Abgeschlossen um {new Date().toLocaleTimeString()}
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => {
+                setCurrentStep('scan');
+                setFormData({street: '', houseNumber: '', garage: '', entryType: 'tor'});
+                setPhoto(null);
+                setTechnicianName('');
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              🔄 Neue Installation
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default RepartManager;
