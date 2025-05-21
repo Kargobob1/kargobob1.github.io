@@ -579,12 +579,10 @@
     </div>
 
     <script>
-        // Initialize Lucide icons
         lucide.createIcons();
 
-        // State management
-        let currentStep = 'scan';
-        let formData = {
+        var currentStep = 'scan';
+        var formData = {
             street: '',
             houseNumber: '',
             garage: '',
@@ -593,87 +591,79 @@
             photo: null
         };
 
-        // DOM elements
-        const steps = {
-            scan: document.getElementById('scan-step'),
-            login: document.getElementById('login-step'),
-            checking: document.getElementById('checking-step'),
-            offline: document.getElementById('offline-step'),
-            config: document.getElementById('config-step'),
-            confirm: document.getElementById('confirm-step'),
-            test: document.getElementById('test-step'),
-            success: document.getElementById('success-step')
-        };
-
-        // Helper functions
         function showStep(stepName) {
-            Object.values(steps).forEach(step => step.classList.remove('active'));
-            steps[stepName].classList.add('active');
+            var allSteps = ['scan', 'login', 'checking', 'offline', 'config', 'confirm', 'test', 'success'];
+            for (var i = 0; i < allSteps.length; i++) {
+                var step = document.getElementById(allSteps[i] + '-step');
+                if (step) {
+                    step.classList.remove('active');
+                }
+            }
+            var activeStep = document.getElementById(stepName + '-step');
+            if (activeStep) {
+                activeStep.classList.add('active');
+            }
             currentStep = stepName;
         }
 
         function updateFormValidation() {
-            const submitButton = document.getElementById('submit-config');
-            const street = document.getElementById('street').value;
-            const houseNumber = document.getElementById('house-number').value;
-            const garage = document.getElementById('garage-select').value;
+            var submitButton = document.getElementById('submit-config');
+            var street = document.getElementById('street').value;
+            var houseNumber = document.getElementById('house-number').value;
+            var garage = document.getElementById('garage-select').value;
             
-            const isValid = street && houseNumber && garage && garage !== 'not_found';
+            var isValid = street && houseNumber && garage && garage !== 'not_found';
             submitButton.disabled = !isValid;
         }
 
         function updateLoginValidation() {
-            const loginButton = document.getElementById('login-button');
-            const name = document.getElementById('technician-name').value;
+            var loginButton = document.getElementById('login-button');
+            var name = document.getElementById('technician-name').value;
             loginButton.disabled = !name.trim();
         }
 
-        // Event listeners
-        document.getElementById('scan-button').addEventListener('click', function() {
+        document.getElementById('scan-button').onclick = function() {
             showStep('login');
-        });
+        };
 
-        document.getElementById('technician-name').addEventListener('input', function(e) {
+        document.getElementById('technician-name').oninput = function(e) {
             formData.technicianName = e.target.value;
             updateLoginValidation();
-        });
+        };
 
-        document.getElementById('login-button').addEventListener('click', function() {
+        document.getElementById('login-button').onclick = function() {
             if (formData.technicianName.trim()) {
                 showStep('checking');
-                
-                // Simulate router check after 3 seconds
                 setTimeout(function() {
-                    var isOnline = Math.random() > 0.3; // 70% chance online
+                    var isOnline = Math.random() > 0.3;
                     showStep(isOnline ? 'config' : 'offline');
                 }, 3000);
             }
-        });
+        };
 
-        document.getElementById('retry-button').addEventListener('click', function() {
+        document.getElementById('retry-button').onclick = function() {
             showStep('checking');
             setTimeout(function() {
                 var isOnline = Math.random() > 0.3;
                 showStep(isOnline ? 'config' : 'offline');
             }, 3000);
-        });
+        };
 
-        // Form inputs
-        document.getElementById('street').addEventListener('input', function(e) {
+        document.getElementById('street').oninput = function(e) {
             formData.street = e.target.value;
             updateFormValidation();
-        });
+        };
 
-        document.getElementById('house-number').addEventListener('input', function(e) {
+        document.getElementById('house-number').oninput = function(e) {
             formData.houseNumber = e.target.value;
             updateFormValidation();
-        });
+        };
 
-        document.getElementById('entry-type').addEventListener('change', function(e) {
+        document.getElementById('entry-type').onchange = function(e) {
             formData.entryType = e.target.value;
-        });
+        };
 
-        document.getElementById('garage-select').addEventListener('change', function(e) {
+        document.getElementById('garage-select').onchange = function(e) {
             formData.garage = e.target.value;
             var warning = document.getElementById('garage-warning');
             
@@ -684,9 +674,9 @@
             }
             
             updateFormValidation();
-        });
+        };
 
-        document.getElementById('photo-input').addEventListener('change', function(e) {
+        document.getElementById('photo-input').onchange = function(e) {
             var file = e.target.files[0];
             if (file) {
                 var reader = new FileReader();
@@ -698,11 +688,10 @@
                 };
                 reader.readAsDataURL(file);
             }
-        });
+        };
 
-        document.getElementById('submit-config').addEventListener('click', function() {
-            // Update installation details
-            var garageOptions = {
+        document.getElementById('submit-config').onclick = function() {
+            var garageNames = {
                 'garage_a': 'Garage A - Tiefgarage',
                 'garage_b': 'Garage B - Außenstellplatz',
                 'garage_c': 'Garage C - Carport',
@@ -710,30 +699,29 @@
             };
             
             var detailsContainer = document.getElementById('installation-details');
-            detailsContainer.innerHTML = 
-                '<p><i data-lucide="map-pin" size="16" color="#3b82f6" style="margin-right: 0.5rem; vertical-align: middle;"></i><strong>' + formData.street + ' ' + formData.houseNumber + '</strong></p>' +
-                '<p>🅿️ <strong>Garage:</strong> ' + garageOptions[formData.garage] + '</p>' +
-                '<p>🚗 <strong>Typ:</strong> ' + formData.entryType.charAt(0).toUpperCase() + formData.entryType.slice(1) + '</p>';
+            var html = '<p><strong>' + formData.street + ' ' + formData.houseNumber + '</strong></p>';
+            html += '<p>🅿️ <strong>Garage:</strong> ' + garageNames[formData.garage] + '</p>';
+            html += '<p>🚗 <strong>Typ:</strong> ' + formData.entryType.charAt(0).toUpperCase() + formData.entryType.slice(1) + '</p>';
             
+            detailsContainer.innerHTML = html;
             lucide.createIcons();
             showStep('confirm');
-        });
+        };
 
-        document.getElementById('start-test').addEventListener('click', function() {
+        document.getElementById('start-test').onclick = function() {
             showStep('test');
-        });
+        };
 
-        document.getElementById('test-passed').addEventListener('click', function() {
+        document.getElementById('test-passed').onclick = function() {
             document.getElementById('completion-time').textContent = new Date().toLocaleTimeString();
             showStep('success');
-        });
+        };
 
-        document.getElementById('test-failed').addEventListener('click', function() {
+        document.getElementById('test-failed').onclick = function() {
             alert('Test fehlgeschlagen. Bitte überprüfen Sie die Installation.');
-        });
+        };
 
-        document.getElementById('new-installation').addEventListener('click', function() {
-            // Reset form data
+        document.getElementById('new-installation').onclick = function() {
             formData = {
                 street: '',
                 houseNumber: '',
@@ -743,7 +731,6 @@
                 photo: null
             };
             
-            // Reset form inputs
             document.getElementById('technician-name').value = '';
             document.getElementById('street').value = '';
             document.getElementById('house-number').value = '';
@@ -754,9 +741,8 @@
             document.getElementById('garage-warning').style.display = 'none';
             
             showStep('scan');
-        });
+        };
 
-        // Initialize
         lucide.createIcons();
     </script>
 </body>
